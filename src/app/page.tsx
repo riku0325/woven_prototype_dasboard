@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Bell, ChevronDown, FileText, Home, Settings, ArrowDownIcon, ArrowUpIcon, FolderOpen, Minus } from "lucide-react"
+import { Bell, ChevronDown, FileText, Home, Settings, ArrowDownIcon, ArrowUpIcon, FolderOpen } from "lucide-react"
 import { useState } from "react"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Label, Legend } from 'recharts'
 
@@ -78,7 +78,8 @@ const workSchedule = [
   },
 ]
 
-const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name, value }: any) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, name, value }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5
   const x = cx + radius * Math.cos(-midAngle * Math.PI / 180)
   const y = cy + radius * Math.sin(-midAngle * Math.PI / 180)
