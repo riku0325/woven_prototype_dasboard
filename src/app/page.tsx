@@ -23,11 +23,11 @@ const donutData = [
 ]
 
 const powerUsageData = [
-  { rank: 1, process: "3：転造", equipment: "LA-6837", usage: 1190 },
-  { rank: 2, process: "7：塗装", equipment: "ZY-7479-2", usage: 679 },
-  { rank: 3, process: "7：塗装", equipment: "CKA-0265", usage: 352 },
-  { rank: 4, process: "5：残留応力", equipment: "IH-3969", usage: 76 },
-  { rank: 5, process: "3：転造切削", equipment: "IH-3700", usage: 43 },
+  { rank: 1, process: "転造", equipment: "LA-6837", usage: 1190 },
+  { rank: 2, process: "塗装", equipment: "ZY-7479-2", usage: 679 },
+  { rank: 3, process: "塗装", equipment: "CKA-0265", usage: 352 },
+  { rank: 4, process: "残留応力", equipment: "IH-3969", usage: 76 },
+  { rank: 5, process: "転造切削", equipment: "IH-3700", usage: 43 },
 ]
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#666666', '#999999']
@@ -42,12 +42,12 @@ const timeSeriesData = [
 
 const workSchedule = [
   { 
-    name: "組材供給", 
+    name: "粗材供給", 
     planned: [{ start: 2, end: 5 }, { start: 11, end: 14 }, { start: 21, end: 24 }],
     actual: [{ start: 2, end: 4 }, { start: 11, end: 13 }, { start: 21, end: 23 }]
   },
   { 
-    name: "仮組1", 
+    name: "旋削1", 
     planned: [{ start: 3, end: 7 }, { start: 13, end: 17 }, { start: 23, end: 27 }],
     actual: [{ start: 3, end: 6 }, { start: 13, end: 16 }, { start: 23, end: 26 }]
   },
@@ -57,7 +57,7 @@ const workSchedule = [
     actual: [{ start: 5, end: 8 }, { start: 15, end: 18 }, { start: 25, end: 28 }]
   },
   { 
-    name: "仮組2", 
+    name: "旋削2", 
     planned: [{ start: 1, end: 6 }, { start: 11, end: 16 }, { start: 21, end: 26 }],
     actual: [{ start: 1, end: 5 }, { start: 11, end: 15 }, { start: 21, end: 25 }]
   },
@@ -70,11 +70,6 @@ const workSchedule = [
     name: "塗装", 
     planned: [{ start: 4, end: 10 }, { start: 14, end: 20 }, { start: 24, end: 30 }],
     actual: [{ start: 4, end: 9 }, { start: 14, end: 19 }, { start: 24, end: 29 }]
-  },
-  { 
-    name: "検査", 
-    planned: [{ start: 7, end: 9 }, { start: 17, end: 19 }, { start: 27, end: 29 }],
-    actual: [{ start: 7, end: 8 }, { start: 17, end: 18 }, { start: 27, end: 28 }]
   },
 ]
 
@@ -122,10 +117,10 @@ export default function Component() {
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 <div className="ml-6 mt-2 space-y-1">
-                  <a href="#" className="block p-2 rounded-lg bg-blue-100 text-blue-800">6LA-GRG98</a>
-                  <a href="#" className="block p-2 rounded-lg hover:bg-white">7LA-GRG98</a>
-                  <a href="#" className="block p-2 rounded-lg hover:bg-white">8LA-GRG98</a>
-                  <a href="#" className="block p-2 rounded-lg hover:bg-white">0LA-GRG98</a>
+                  <a href="#" className="block p-2 rounded-lg bg-blue-100 text-blue-800">FDS No.01</a>
+                  <a href="#" className="block p-2 rounded-lg hover:bg-white">FDS No.02</a>
+                  <a href="#" className="block p-2 rounded-lg hover:bg-white">FDS No.03</a>
+                  <a href="#" className="block p-2 rounded-lg hover:bg-white">FDS No.04</a>
                 </div>
               </div>
             </div>
@@ -157,7 +152,7 @@ export default function Component() {
           <div className="space-y-4">
             <h1 className="text-2xl font-semibold">製造ライン 6LA-GRG98 2024年11月</h1>
             
-            <div className="flex space-x-2 items-center">
+            <div className="flex space-x-2 items-center" style={{ width: "65%" }}>
               <Button 
                 variant={activeView === "全体" ? "default" : "outline"}
                 onClick={() => setActiveView("全体")}
@@ -183,11 +178,11 @@ export default function Component() {
               </div>
               
               <Button 
-                variant={activeView === "共通機器" ? "default" : "outline"}
-                onClick={() => setActiveView("共通機器")}
+                variant={activeView === "照明" ? "default" : "outline"}
+                onClick={() => setActiveView("照明")}
                 className="min-w-[100px]"
               >
-                共通機器
+                照明
               </Button>
             </div>
           </div>
@@ -205,8 +200,8 @@ export default function Component() {
                           cy="50%"
                           labelLine={false}
                           label={renderCustomizedLabel}
-                          innerRadius={60}
-                          outerRadius={80}
+                          innerRadius={50}
+                          outerRadius={100}
                           fill="#8884d8"
                           dataKey="value"
                         >
@@ -231,7 +226,7 @@ export default function Component() {
 
                 <Card className="col-span-1">
                   <CardHeader>
-                    <CardTitle>11月 使用電力トップ5</CardTitle>
+                    <CardTitle>11月 消費電力量トップ5</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <table className="w-full">
@@ -308,7 +303,7 @@ export default function Component() {
                           })}
                         </div>
                       </div>
-                      <div className="space-y-4">
+                      <div className="space-y-4 x">
                         {workSchedule.map((process) => (
                           <div key={process.name} className="flex items-center">
                             <span className="w-20 text-sm">{process.name}</span>
@@ -357,10 +352,10 @@ export default function Component() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>月間 使用電力</CardTitle>
+                  <CardTitle>月間 消費電力量</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">43,520 kwh</div>
+                  <div className="text-3xl font-bold">43520 kwh</div>
                   <div className="text-sm text-muted-foreground flex items-center">
                     前月比 -942 kwh
                     <ArrowDownIcon className="w-4 h-4 ml-1 text-green-500" />
@@ -373,7 +368,7 @@ export default function Component() {
                   <CardTitle>月間 CO2排出量</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold">4,798 kg-CO2</div>
+                  <div className="text-3xl font-bold">4798 kg-CO2</div>
                   <div className="text-sm text-muted-foreground flex items-center">
                     前月比 -233 kg-CO2
                     <ArrowDownIcon className="w-4 h-4 ml-1 text-green-500" />
