@@ -188,7 +188,7 @@ export default function Component() {
           </div>
 
           <div className="grid grid-cols-12 gap-6">
-            <div className="col-span-8">
+            <div className="col-span-9">
               <div className="grid grid-cols-2 gap-6">
                 <Card className="col-span-1">
                   <CardContent className="p-6">
@@ -303,31 +303,35 @@ export default function Component() {
                           })}
                         </div>
                       </div>
-                      <div className="space-y-4 x">
+                      <div className="space-y-4">
                         {workSchedule.map((process) => (
                           <div key={process.name} className="flex items-center">
                             <span className="w-20 text-sm">{process.name}</span>
-                            <div className="flex-1 h-6 bg-gray-100 rounded relative">
-                              {process.planned.map((period, index) => (
-                                <div
-                                  key={`planned-${index}`}
-                                  className="absolute h-full bg-gray-300"
-                                  style={{
-                                    left: `${(period.start - 1) / 30 * 100}%`,
-                                    width: `${(period.end - period.start + 1) / 30 * 100}%`,
-                                  }}
-                                />
-                              ))}
-                              {process.actual.map((period, index) => (
-                                <div
-                                  key={`actual-${index}`}
-                                  className="absolute h-full bg-gray-600"
-                                  style={{
-                                    left: `${(period.start - 1) / 30 * 100}%`,
-                                    width: `${(period.end - period.start + 1) / 30 * 100}%`,
-                                  }}
-                                />
-                              ))}
+                            <div className="flex-1 space-y-1">
+                              <div className="h-2 bg-gray-100 rounded relative">
+                                {process.planned.map((period, index) => (
+                                  <div
+                                    key={`planned-${index}`}
+                                    className="absolute h-full bg-gray-300"
+                                    style={{
+                                      left: `${(period.start - 1) / 30 * 100}%`,
+                                      width: `${(period.end - period.start + 1) / 30 * 100}%`,
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                              <div className="h-2 bg-gray-100 rounded relative">
+                                {process.actual.map((period, index) => (
+                                  <div
+                                    key={`actual-${index}`}
+                                    className="absolute h-full bg-gray-600"
+                                    style={{
+                                      left: `${(period.start - 1) / 30 * 100}%`,
+                                      width: `${(period.end - period.start + 1) / 30 * 100}%`,
+                                    }}
+                                  />
+                                ))}
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -338,7 +342,7 @@ export default function Component() {
               </Card>
             </div>
 
-            <div className="col-span-4 space-y-6">
+            <div className="col-span-3 space-y-6">
               <Card>
                 <CardContent className="p-0">
                   <Calendar
