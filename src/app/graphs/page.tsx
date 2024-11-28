@@ -62,7 +62,6 @@ const workSchedule = [
 ]
 
 export default function Component() {
-  const [activeProcess, setActiveProcess] = useState("仮組1")
   const [selectedEquipment, setSelectedEquipment] = useState("CKA-0265")
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2024, 10, 18),
