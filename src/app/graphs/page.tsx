@@ -62,7 +62,14 @@ const workSchedule = [
 ]
 
 export default function Component() {
-  const [selectedEquipment, setSelectedEquipment] = useState("CKA-0265")
+  const [activeProcess, setActiveProcess] = useState("仮組1")
+  const [selectedEquipment, setSelectedEquipment] = useState<Record<string, boolean>>({
+    'CKA-0265': true,
+    'LA-6836': true,
+    'CKA-0266': true,
+    'LA-6837': true,
+    'CK-7630': true,
+  })
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2024, 10, 18),
     to: addDays(new Date(2024, 10, 18), 6)
@@ -127,11 +134,11 @@ export default function Component() {
                 </Tabs>
 
                 <div className="flex space-x-2">
-                  {["CKA-0265", "LA-6836", "CKA-0266", "LA-6837", "CK-7630"].map((equipment) => (
+                  {Object.keys(selectedEquipment).map((equipment) => (
                     <Button
                       key={equipment}
-                      variant={selectedEquipment === equipment ? "default" : "outline"}
-                      onClick={() => setSelectedEquipment(equipment)}
+                      variant={selectedEquipment[equipment] ? "default" : "outline"}
+                      onClick={() => setSelectedEquipment(prev => ({ ...prev, [equipment]: !prev[equipment] }))}
                       className="min-w-[100px]"
                     >
                       {equipment}
@@ -166,7 +173,7 @@ export default function Component() {
                       <Tooltip />
                       <Legend />
                       {Object.keys(timeSeriesData[0])
-                        .filter(key => key !== 'time')
+                        .filter(key => key !== 'time' && selectedEquipment[key])
                         .map((key, index) => (
                           <Line
                             key={key}
