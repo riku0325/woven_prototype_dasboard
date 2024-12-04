@@ -62,7 +62,6 @@ const workSchedule = [
 ]
 
 export default function Component() {
-  const [activeProcess, setActiveProcess] = useState("仮組1")
   const [selectedEquipment, setSelectedEquipment] = useState<Record<string, boolean>>({
     'CKA-0265': true,
     'LA-6836': true,
