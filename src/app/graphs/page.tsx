@@ -1,5 +1,4 @@
-'use client'
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { Calendar } from "@/components/ui/calendar"
@@ -12,67 +11,69 @@ import {
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Bell, FileText, ArrowUpIcon, FolderOpen, ThumbsUp, ThumbsDown } from 'lucide-react'
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { DateRange } from "react-day-picker"
 import { addDays } from "date-fns"
 
-// Time series data for the line chart
-const timeSeriesData = Array.from({ length: 49 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 3
-  const minute = (i % 2) * 30
-  const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
-  return {
-    time,
-    'CKA-0265': Math.random() * 60 + 20,
-    'LA-6836': Math.random() * 60 + 20,
-    'CKA-0266': Math.random() * 60 + 20,
-    'LA-6837': Math.random() * 60 + 20,
-    'CK-7630': Math.random() * 60 + 20,
-  }
-})
+const BASE_URL = 'https://wvw4hutwne.execute-api.ap-northeast-1.amazonaws.com/v1/'
+const ACCESS_KEY = 'baccd941-ff2f-422a-a7f1-992c69c20a90' // Replace with your actual access key
 
-// Bar chart data for AI analysis
-const analysisData = Array.from({ length: 13 }, (_, i) => ({
-  day: i + 18,
-  current: Math.random() * 150 + 50,
-  previous: Math.random() * 150 + 50,
-}))
+// Function to fetch data from the API
+async function fetchData() {
+  const year = 2023
+  const month = 1
+  const day = 1
+  const dateString = `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`
 
-// Work schedule data
-const workSchedule = [
-  {
-    shift: "1班",
-    schedule: [
-      { start: "6:00", end: "8:00" },
-      { start: "10:00", end: "12:00" },
-      { start: "14:00", end: "16:00" },
-      { start: "18:00", end: "20:00" },
-    ]
-  },
-  {
-    shift: "2班",
-    schedule: [
-      { start: "16:00", end: "18:00" },
-      { start: "20:00", end: "22:00" },
-      { start: "0:00", end: "2:00" },
-      { start: "4:00", end: "6:00" },
-    ]
-  }
-]
+  // const infoResponse = await fetch(`${BASE_URL}info?k=${ACCESS_KEY}`)
+  // const infoData = await infoResponse.json()
+
+  const labelResponse = await fetch(`${BASE_URL}disagg_label?k=${ACCESS_KEY}`)
+  const labelData = await labelResponse.json()
+
+  const disaggResponse = await fetch(`${BASE_URL}disagg_power?k=${ACCESS_KEY}&bin=15min&from=${dateString}&to=${dateString}`)
+  const disaggData = await disaggResponse.json()
+
+  // Process the data similar to the Python script
+  const labels = labelData.merge_model_label
+    .map((item: any, index: number) => ({ index, label: item.label, stack_order: item.stack_order }))
+    .sort((a: any, b: any) => a.stack_order - b.stack_order)
+
+  const processedData = disaggData.UnixTime.map((time: number, i: number) => {
+    const entry: any = {
+      time: new Date(time * 1000).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+    }
+    labels.forEach((label: any) => {
+      entry[label.label] = disaggData.DisaggPowers[label.index][i]
+    })
+    return entry
+  })
+
+  return processedData
+}
 
 export default function Component() {
-  const [selectedEquipment, setSelectedEquipment] = useState<Record<string, boolean>>({
-    'CKA-0265': true,
-    'LA-6836': true,
-    'CKA-0266': true,
-    'LA-6837': true,
-    'CK-7630': true,
-  })
+  // const [activeProcess, setActiveProcess] = useState("仮組1")
+  const [selectedEquipment, setSelectedEquipment] = useState<Record<string, boolean>>({})
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2024, 10, 18),
     to: addDays(new Date(2024, 10, 18), 6)
   })
+  const [chartData, setChartData] = useState<any[]>([])
+
+  useEffect(() => {
+    if (dateRange?.from) {
+      fetchData().then(setChartData)
+    }
+  }, [dateRange])
+
+  useEffect(() => {
+    if (chartData.length > 0) {
+      const equipment = Object.keys(chartData[0]).filter(key => key !== 'time')
+      setSelectedEquipment(equipment.reduce((acc, curr) => ({ ...acc, [curr]: true }), {}))
+    }
+  }, [chartData])
 
   return (
     <div className="flex h-screen bg-background">
@@ -165,14 +166,14 @@ export default function Component() {
               <Card>
                 <CardContent className="p-6">
                   <ResponsiveContainer width="100%" height={400}>
-                    <LineChart data={timeSeriesData}>
+                    <LineChart data={chartData}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="time" />
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      {Object.keys(timeSeriesData[0])
-                        .filter(key => key !== 'time' && selectedEquipment[key])
+                      {Object.keys(selectedEquipment)
+                        .filter(key => selectedEquipment[key])
                         .map((key, index) => (
                           <Line
                             key={key}
@@ -298,3 +299,46 @@ export default function Component() {
     </div>
   )
 }
+
+// const timeSeriesData = Array.from({ length: 49 }, (_, i) => {
+//   const hour = Math.floor(i / 2) + 3
+//   const minute = (i % 2) * 30
+//   const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`
+//   return {
+//     time,
+//     'CKA-0265': Math.random() * 60 + 20,
+//     'LA-6836': Math.random() * 60 + 20,
+//     'CKA-0266': Math.random() * 60 + 20,
+//     'LA-6837': Math.random() * 60 + 20,
+//     'CK-7630': Math.random() * 60 + 20,
+//   }
+// })
+
+// Bar chart data for AI analysis
+const analysisData = Array.from({ length: 13 }, (_, i) => ({
+  day: i + 18,
+  current: Math.random() * 150 + 50,
+  previous: Math.random() * 150 + 50,
+}))
+
+// Work schedule data
+const workSchedule = [
+  {
+    shift: "1班",
+    schedule: [
+      { start: "6:00", end: "8:00" },
+      { start: "10:00", end: "12:00" },
+      { start: "14:00", end: "16:00" },
+      { start: "18:00", end: "20:00" },
+    ]
+  },
+  {
+    shift: "2班",
+    schedule: [
+      { start: "16:00", end: "18:00" },
+      { start: "20:00", end: "22:00" },
+      { start: "0:00", end: "2:00" },
+      { start: "4:00", end: "6:00" },
+    ]
+  }
+]
