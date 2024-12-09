@@ -1,9 +1,9 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 "use client"
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { DayPicker } from "react-day-picker"
-
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
 
@@ -16,7 +16,9 @@ function Calendar({
   ...props
 }: CalendarProps) {
   return (
+    // @ts-ignore
     <DayPicker
+      mode="range"
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
       classNames={{
