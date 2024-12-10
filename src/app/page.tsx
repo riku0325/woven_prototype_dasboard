@@ -15,6 +15,61 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell
 import { Calendar } from "@/components/ui/calendar"
 import { Bell, ChevronDown, FileText, Home, Settings, FolderOpen, ArrowDownIcon, ArrowUpIcon } from "lucide-react"
 
+// 提示されたマッピング表に基づくデータ
+const mappingData: Record<string, { 負荷名称: string; 製造工程名: string }> = {
+  "M工場 0043 B23-2|#06": { 負荷名称: "照明", 製造工程名: "共通" },
+  "M工場 0043 B23-2|#02": { 負荷名称: "ZY-7477", 製造工程名: "粗材供給" },
+  "M工場 0043 B23-2|#14": { 負荷名称: "CKA-0265", 製造工程名: "旋削1" },
+  "M工場 0043 B23-2|#08": { 負荷名称: "LA-6836", 製造工程名: "旋削1" },
+  "M工場 0043 B23-2|#09": { 負荷名称: "CKA-0266", 製造工程名: "旋削1" },
+  "M工場 0043 B23-2|#12": { 負荷名称: "LA-6837", 製造工程名: "旋削1" },
+  "M工場 0043 B23-2|#04": { 負荷名称: "CK-7630", 製造工程名: "旋削1" },
+  "M工場 0043 B23-2|#01+#07": { 負荷名称: "MM-1064", 製造工程名: "転造" },
+  "M工場 0043 B23-2|#03": { 負荷名称: "LA-5780", 製造工程名: "旋削2" },
+  "M工場 0043 B23-2|#13": { 負荷名称: "LA-6362", 製造工程名: "旋削2" },
+  "M工場 0043 B23-2|#15": { 負荷名称: "IH-3969", 製造工程名: "熱処理" },
+  "M工場 0043 B23-2|#05": { 負荷名称: "IH-3700", 製造工程名: "熱処理" },
+  "M工場 0045 B23-1|#01~#16の和": { 負荷名称: "ZED-2835?", 製造工程名: "熱処理" },
+  "M工場 0041 B23-1|#01~#16の和": { 負荷名称: "KIH-3963?", 製造工程名: "熱処理" },
+  "M工場 0043 B23-2|#10": { 負荷名称: "TS-3098", 製造工程名: "熱処理" },
+  "M工場 0043 B23-2|#16": { 負荷名称: "ZY-7479-2", 製造工程名: "塗装" },
+  "M工場 0043 B23-2|#11": { 負荷名称: "TS-8977", 製造工程名: "塗装" },
+  "M工場 0040 B23-5|#01~#16の和": { 負荷名称: "ZY-7401", 製造工程名: "塗装" },
+  // 必要に応じて追加可能
+}
+
+// カラム名解析関数
+// カラム例:
+// "M工場_0043_B23-2_#14" -> Name: "M工場 0043 B23-2", LabelID: "#14"
+// "Group3_AI分析中#01" -> Name: "Group3 AI分析中", LabelID: "#01"
+// 
+// 手順:
+// 1. '#'を含む最後の位置を探してLabelIDを抽出
+// 2. それ以前をNameとして、'_'を半角スペースに
+function parseColumnName(colName: string): { 負荷名称?: string; 製造工程名?: string; raw: string } {
+  const hashIndex = colName.lastIndexOf('#')
+  if (hashIndex === -1) {
+    // '#'がない場合はマッピング不可、rawを返す
+    return { raw: colName }
+  }
+
+  const labelID = colName.slice(hashIndex)  // "#XX"部分
+  const namePart = colName.slice(0, hashIndex)
+  
+  // namePart中の'_'をスペースに
+  const name = namePart.replace(/_/g, ' ').trim()
+
+  const key = `M工場 0043 B23-2|${labelID}`
+  console.log(key)
+  console.log(name)
+  console.log(mappingData)
+  if (mappingData[key]) {
+    return { ...mappingData[key], raw: colName }
+  } else {
+    return { raw: colName } // マッピングなしの場合はそのまま
+  }
+}
+
 function getFormattedDate(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -32,7 +87,6 @@ function getDateRangeArray(start: Date, end: Date): Date[] {
   return arr
 }
 
-// ラベル描画用(円グラフ)
 const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, name, value }: any) => {
   const radius = innerRadius + (outerRadius - innerRadius) * 0.5
   const x = cx + radius * Math.cos(-midAngle * Math.PI / 180)
@@ -46,13 +100,12 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, nam
   )
 }
 
-// カラーパレット
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#666666', '#999999','#8dd1e1','#a4de6c','#d0ed57','#ffc0cb']
 
 export default function Component() {
   const [selectedRange, setSelectedRange] = useState<{from?: Date; to?: Date}>({})
   const [csvData, setCsvData] = useState<any[]>([])
-  const [columns, setColumns] = useState<string[]>([]) // 時間以外の列ヘッダ
+  const [columns, setColumns] = useState<string[]>([])
   const [activeView, setActiveView] = useState<string>("全体")
 
   useEffect(() => {
@@ -65,17 +118,17 @@ export default function Component() {
     const dateArray = getDateRangeArray(selectedRange.from, selectedRange.to)
 
     async function fetchData() {
+      // 例として、M工場_0040 B23-5_1分ごとの有効電力_YYYYMMDD.csvを参照
+      // 実際にはselectedRangeから対応するファイルをfetchしてください
       const dailyDataPromises = dateArray.map(date => {
         const dateStr = getFormattedDate(date)
         const fileName = `M工場_0040 B23-5_1分ごとの有効電力_${dateStr}.csv`
         const filePath = `/data/${fileName}`
 
         return fetch(filePath)
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
+        // @ts-ignore
           .then(response => {
             if (!response.ok) {
-              // ファイルがない場合は空データ
               return { date: `${date.getMonth() + 1}/${date.getDate()}` }
             }
             return response.text()
@@ -91,7 +144,6 @@ export default function Component() {
                     // @ts-ignore
                     const dataColumns = fields.filter(f => f !== "時間" && f !== "")
 
-                    // 初回読み込み時にcolumns未設定ならセット
                     if (columns.length === 0 && dataColumns.length > 0) {
                       setColumns(dataColumns)
                     }
@@ -114,7 +166,6 @@ export default function Component() {
                 })
               })
             } else {
-              // ファイルなし
               return {
                 date: `${date.getMonth() + 1}/${date.getDate()}`
               }
@@ -134,7 +185,6 @@ export default function Component() {
 
   const processViews = ["組材供給", "旋削1", "転造", "旋削2", "熱処理", "塗装", "照明"]
 
-  // 集計処理: csvDataから期間内合計を計算
   const { totalByColumn, totalAll } = useMemo(() => {
     let totalAll = 0
     const totalByColumn: {[key:string]: number} = {}
@@ -151,45 +201,55 @@ export default function Component() {
     return { totalByColumn, totalAll }
   }, [csvData, columns])
 
-  // ドーナツチャート用データ作成
-  // columnsをもとに各カラムの合計値を割り当て、割合を計算
-  const donutChartData = useMemo(() => {
+  const donutChartDataWithCol = useMemo(() => {
     if (totalAll === 0) return []
-    return columns.map(col => ({
-      name: col,
-      value: totalByColumn[col],
-      percentage: (totalByColumn[col] / totalAll) * 100
-    }))
+    return columns.map(col => {
+      const { 負荷名称, 製造工程名 } = parseColumnName(col)
+      return {
+        col,
+        負荷名称,
+        製造工程名,
+        value: totalByColumn[col],
+      }
+    })
   }, [totalByColumn, totalAll, columns])
 
-  // トップ5表用（使用量が多い順に上位5件）
+  const donutChartData = useMemo(() => {
+    return donutChartDataWithCol.map(item => {
+      const displayName = (item.負荷名称 && item.製造工程名) ? `${item.負荷名称}(${item.製造工程名})` : item.col
+      return {
+        name: displayName,
+        value: item.value,
+      }
+    })
+  }, [donutChartDataWithCol])
+
+  // トップ5表: 工程名(=製造工程名)と設備(=負荷名称)
   const top5Data = useMemo(() => {
-    if (donutChartData.length === 0) return []
-    const sorted = [...donutChartData].sort((a,b) => b.value - a.value).slice(0,5)
+    if (donutChartDataWithCol.length === 0) return []
+    const sorted = [...donutChartDataWithCol].sort((a,b) => b.value - a.value).slice(0,5)
     return sorted.map((item, index) => ({
       rank: index+1,
-      process: item.name, 
-      // 設備名などの詳細情報はCSVからは得られないため、ここでは仮に項目名を設備名代わりに表示
-      equipment: item.name, 
+      process: item.製造工程名 || "不明工程",
+      equipment: item.負荷名称 || item.col,
       usage: Math.round(item.value)
     }))
-  }, [donutChartData])
+  }, [donutChartDataWithCol])
 
-  // 月間（選択範囲） 消費電力量: totalAll (kWh)
-  // 月間 CO2排出量: 仮に 1kWhあたり0.5 kg-CO2とする
-  // 月間 電力料金: 仮に1kWhあたり20円とする
   const monthlyConsumption = Math.round(totalAll)
-  const monthlyCO2 = Math.round(totalAll * 0.5) // 0.5 kg-CO2/kWh 仮
-  const monthlyCost = Math.round(totalAll * 20) // 20円/kWh 仮
+  const monthlyCO2 = Math.round(totalAll * 0.5)
+  const monthlyCost = Math.round(totalAll * 20)
 
-  // 前月比などは計算式がないため、例として固定値差分で表示
-  // 実際は前月データも読み込み比較するなどの実装が必要
-  const prevMonthDiffConsumption = -942
-  const prevMonthDiffCO2 = -233
+  const prevMonthDiffConsumption = -59 
+  const prevMonthDiffCO2 = -72
   const prevMonthDiffCost = 23118
   const isConsumptionDown = prevMonthDiffConsumption < 0
   const isCO2Down = prevMonthDiffCO2 < 0
   const isCostUp = prevMonthDiffCost > 0
+
+  const rangeTitle = (selectedRange.from && selectedRange.to)
+    ? `${selectedRange.from.getMonth()+1}/${selectedRange.from.getDate()}〜${selectedRange.to.getMonth()+1}/${selectedRange.to.getDate()}`
+    : ""
 
   return (
     <div className="flex h-screen bg-background">
@@ -249,8 +309,7 @@ export default function Component() {
         <div className="p-6 space-y-6">
           <div className="space-y-4">
             <h1 className="text-2xl font-semibold">
-              製造ライン FDS No.01 
-              {selectedRange.from && selectedRange.to ? ` ${selectedRange.from.getMonth()+1}/${selectedRange.from.getDate()}〜${selectedRange.to.getMonth()+1}/${selectedRange.to.getDate()}` : ""}
+              製造ライン FDS No.01 {rangeTitle}
             </h1>
             
             <div className="flex space-x-2 items-center" style={{ width: "65%" }}>
@@ -319,7 +378,7 @@ export default function Component() {
 
                 <Card className="col-span-1">
                   <CardHeader>
-                    <CardTitle>範囲内 消費電力量トップ5</CardTitle>
+                    <CardTitle>{rangeTitle ? `${rangeTitle} 使用電力量トップ5` : "使用電力量トップ5"}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <table className="w-full">
@@ -328,15 +387,15 @@ export default function Component() {
                           <th className="text-left">順位</th>
                           <th className="text-left">工程名</th>
                           <th className="text-left">設備</th>
-                          <th className="text-right">使用kwh</th>
+                          <th className="text-right">使用kWh</th>
                         </tr>
                       </thead>
                       <tbody>
                         {top5Data.map((row) => (
                           <tr key={row.rank} className="border-t">
                             <td className="py-2">{row.rank}</td>
-                            <td>{row.process}</td>
-                            <td>{row.equipment}</td>
+                            <td>{row.process}</td>    {/* 工程名 */}
+                            <td>{row.equipment}</td>  {/* 設備 */}
                             <td className="text-right">{row.usage}</td>
                           </tr>
                         ))}
@@ -354,11 +413,31 @@ export default function Component() {
                     <BarChart data={csvData}>
                       <XAxis dataKey="date" />
                       <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      {columns.map((col, idx) => (
-                        <Bar key={col} dataKey={col} fill={COLORS[idx % COLORS.length]} />
-                      ))}
+                      <Tooltip 
+                        formatter={(value, name) => {
+                          // @ts-ignore
+                          const { 製造工程名 } = parseColumnName(name)
+                          const displayName = 製造工程名 || name
+                          return [value, displayName]
+                        }}
+                      />
+                      <Legend formatter={(value) => {
+                        const { 製造工程名 } = parseColumnName(value)
+                        return 製造工程名 || value
+                      }} />
+                      {columns.map((col, idx) => {
+                        const { 製造工程名 } = parseColumnName(col)
+                        const displayName = 製造工程名 || col
+                        return (
+                          <Bar
+                            key={col}
+                            dataKey={col}
+                            name={displayName}
+                            fill={COLORS[idx % COLORS.length]} 
+                            stackId="a"
+                          />
+                        )
+                      })}
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -382,12 +461,12 @@ export default function Component() {
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle>月間 消費電力量</CardTitle>
+                  <CardTitle>週間 消費電力量</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{monthlyConsumption} kwh</div>
                   <div className="text-sm text-muted-foreground flex items-center">
-                    前月比 {prevMonthDiffConsumption} kwh
+                    前週比 {prevMonthDiffConsumption} kwh
                     {isConsumptionDown ? 
                       <ArrowDownIcon className="w-4 h-4 ml-1 text-green-500" />
                     : 
@@ -399,12 +478,12 @@ export default function Component() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>月間 CO2排出量</CardTitle>
+                  <CardTitle>週間 CO2排出量</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">{monthlyCO2} kg-CO2</div>
                   <div className="text-sm text-muted-foreground flex items-center">
-                    前月比 {prevMonthDiffCO2} kg-CO2
+                    前週比 {prevMonthDiffCO2} kg-CO2
                     {isCO2Down ?
                       <ArrowDownIcon className="w-4 h-4 ml-1 text-green-500" />
                     :
@@ -416,12 +495,12 @@ export default function Component() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>月間 電力料金</CardTitle>
+                  <CardTitle>週間 電力料金</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">¥{monthlyCost.toLocaleString()}</div>
                   <div className="text-sm text-muted-foreground flex items-center">
-                    前月比 {prevMonthDiffCost > 0 ? '+' : ''}¥{prevMonthDiffCost.toLocaleString()}
+                    前週比 +¥{prevMonthDiffCost.toLocaleString()}
                     {isCostUp ? 
                       <ArrowUpIcon className="w-4 h-4 ml-1 text-red-500" />
                     :
@@ -440,7 +519,23 @@ export default function Component() {
             </CardHeader>
             <CardContent>
               {csvData.length > 0 && columns.length > 0 ? (
-                <p>・選択範囲内で最も{columns[0]}が大きかった日は...</p>
+                (() => {
+                  let maxVal = -Infinity
+                  let maxCol = ""
+                  csvData.forEach(day => {
+                    columns.forEach(c => {
+                      const v = day[c] || 0
+                      if (v > maxVal) {
+                        maxVal = v
+                        maxCol = c
+                      }
+                    })
+                  })
+                  const { 負荷名称, 製造工程名 } = parseColumnName(maxCol)
+                  const maxProcess = 製造工程名 || "不明工程"
+                  const maxEquipment = 負荷名称 || maxCol
+                  return <p>・選択範囲内で最も消費電力が多かったのは【工程名: {maxProcess}, 設備: {maxEquipment}】です</p>
+                })()
               ) : (
                 <p>・データがありません</p>
               )}
