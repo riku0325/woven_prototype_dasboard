@@ -227,7 +227,7 @@ export default function Component() {
   // トップ5表: 工程名(=製造工程名)と設備(=負荷名称)
   const top5Data = useMemo(() => {
     if (donutChartDataWithCol.length === 0) return []
-    const sorted = [...donutChartDataWithCol].sort((a,b) => b.value - a.value).slice(0,5)
+    const sorted = [...donutChartDataWithCol].sort((a,b) => b.value - a.value).slice(0,10)
     return sorted.map((item, index) => ({
       rank: index+1,
       process: item.製造工程名 || "不明工程",
@@ -378,7 +378,7 @@ export default function Component() {
 
                 <Card className="col-span-1">
                   <CardHeader>
-                    <CardTitle>{rangeTitle ? `${rangeTitle} 使用電力量トップ5` : "使用電力量トップ5"}</CardTitle>
+                    <CardTitle>{rangeTitle ? `${rangeTitle} 使用電力量トップ10` : "使用電力量トップ10"}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <table className="w-full">
